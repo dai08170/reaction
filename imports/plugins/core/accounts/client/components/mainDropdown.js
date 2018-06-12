@@ -95,7 +95,11 @@ class MainDropdown extends Component {
           className="accounts-dialog accounts-layout dropdown-menu pull-right"
           style={{ padding: "10px 20px" }}
         >
-          <Login />
+          { this.props.keycloakEnabled ?
+            <Components.KeycloakLoginButton {...this.props} />
+            :
+            <Login />
+          }
         </div>
       </div>
     );

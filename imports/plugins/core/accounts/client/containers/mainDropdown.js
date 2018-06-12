@@ -1,18 +1,16 @@
 import { compose, withProps } from "recompose";
 import { Meteor } from "meteor/meteor";
-import { Accounts } from "meteor/accounts-base";
 import { Roles } from "meteor/alanning:roles";
 import { Session } from "meteor/session";
-import { registerComponent, composeWithTracker, withCurrentAccount } from "@reactioncommerce/reaction-components";
+import { registerComponent, composeWithTracker } from "@reactioncommerce/reaction-components";
 import { i18nextDep, i18next, Reaction, Logger } from "/client/api";
-import { Tags } from "/lib/collections";
+import { Accounts, Tags } from "/lib/collections";
 import { getUserAvatar } from "/imports/plugins/core/accounts/client/helpers/helpers";
 import MainDropdown from "../components/mainDropdown";
 
 function displayName(displayUser) {
   i18nextDep.depend();
-
-  const user = displayUser || Accounts.user();
+  const user = displayUser || Accounts.findOne({ userId: Reaction.getUserId });
 
   if (user) {
     if (user.name) {
@@ -94,11 +92,16 @@ const composer = ({ currentAccount }, onData) => {
   const userImage = getUserAvatar(currentAccount);
   const userName = displayName(currentAccount);
   const adminShortcuts = getAdminShortcutIcons();
+  const { keycloakRealm, keycloakClientID, keycloakServerUrl, keycloakEnabled } = Meteor.settings.public;
 
   onData(null, {
     adminShortcuts,
     userImage,
-    userName
+    userName,
+    keycloakRealm,
+    keycloakClientID,
+    keycloakServerUrl,
+    keycloakEnabled
   });
 };
 
@@ -111,13 +114,11 @@ const handlers = {
 };
 
 registerComponent("MainDropdown", MainDropdown, [
-  withCurrentAccount,
   withProps(handlers),
   composeWithTracker(composer, false)
 ]);
 
 export default compose(
-  withCurrentAccount,
   withProps(handlers),
   composeWithTracker(composer, false)
 )(MainDropdown);

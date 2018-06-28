@@ -1,6 +1,5 @@
 import React from "react";
 import { Template } from "meteor/templating";
-import { Accounts } from "meteor/accounts-base";
 import * as Collections from "/lib/collections";
 import { Components } from "@reactioncommerce/reaction-components";
 
@@ -51,9 +50,8 @@ export const LoginFormSharedHelpers = {
  * @return {Component}          ReactionAvatar component
  */
 export function getUserAvatar(currentUser) {
-  const user = currentUser || Accounts.user();
+  const account = currentUser;
 
-  const account = Collections.Accounts.findOne(user._id);
   // first we check picture exists. Picture has higher priority to display
   if (account && account.profile && account.profile.picture) {
     const { picture } = account.profile;
@@ -66,8 +64,9 @@ export function getUserAvatar(currentUser) {
       />
     );
   }
-  if (user.emails && user.emails.length === 1) {
-    const email = user.emails[0].address;
+
+  if (account && account.emails && account.emails.length === 1) {
+    const email = account.emails[0].address;
 
     return (
       <Components.ReactionAvatar

@@ -7,6 +7,24 @@ import { Roles } from "meteor/alanning:roles";
 /* eslint "no-alert": 0 */
 
 /**
+ * @method userId
+ * @summary returns id linked to an Account doc
+ * @return {Object} String
+ */
+export function getUserId() {
+  if (Meteor.settings.public.keycloakEnabled) {
+    const profileStr = localStorage.getItem("reaction_kc_profile");
+    const profile = profileStr && JSON.parse(profileStr);
+
+    return profile && profile.attributes &&
+      profile.attributes["reaction-account-id"] &&
+      profile.attributes["reaction-account-id"][0];
+  }
+
+  return Meteor.userId();
+}
+
+/**
  * @name toggleSession
  * @method
  * @memberof Helpers

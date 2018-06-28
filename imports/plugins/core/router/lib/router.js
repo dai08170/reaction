@@ -348,7 +348,7 @@ function hasRoutePermission(route) {
 
   return routeName === "index" ||
     routeName === "not-found" ||
-    Router.Reaction.hasPermission(route.permissions, Meteor.userId());
+    Router.Reaction.hasPermission(route.permissions, Router.Reaction.getUserId());
 }
 
 

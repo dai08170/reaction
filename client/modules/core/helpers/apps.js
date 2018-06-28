@@ -94,7 +94,7 @@ export function Apps(optionHash) {
           // This checks that the registry item contains a permissions matches with the user's permission for the shop
           const hasPermissionToRegistryItem = item.permissions.indexOf(permission) > -1;
           // This checks that the user's permission set have the right value that is on the registry item
-          const hasRoleAccessForShop = Roles.userIsInRole(Meteor.userId(), permission, Reaction.getShopId());
+          const hasRoleAccessForShop = Roles.userIsInRole(Reaction.getUserId(), permission, Reaction.getShopId());
 
           // both checks must pass for access to be granted
           if (hasPermissionToRegistryItem && hasRoleAccessForShop) {

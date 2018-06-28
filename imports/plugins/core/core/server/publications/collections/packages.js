@@ -2,7 +2,7 @@ import _ from "lodash";
 import { Meteor } from "meteor/meteor";
 import { check, Match } from "meteor/check";
 import { Roles } from "meteor/alanning:roles";
-import { Packages } from "/lib/collections";
+import { Accounts, Packages } from "/lib/collections";
 import Reaction from "/imports/plugins/core/core/server/Reaction";
 import { translateRegistry } from "/lib/api";
 
@@ -62,14 +62,17 @@ function transform(doc, userId) {
   return doc;
 }
 
-Meteor.publish("Packages", function (shopId) {
+Meteor.publish("Packages", function (shopId, _userId) {
   check(shopId, Match.Maybe(String));
+  check(_userId, Match.Maybe(String));
 
   const self = this;
   let myShopId = shopId;
 
+  const account = Accounts.findOne({ userId: _userId }) || {}; // verify userId argument
   // user is required.
-  if (self.userId) {
+  const userId = self.userId || account.userId;
+  if (userId) {
     // default options, we're limiting fields here that we don't want to publish unless admin user. in particular, settings
     // should not be published but we need to use settings in the transform everything except settings.public and
     // settings.*.enabled are removed in transform
@@ -93,9 +96,9 @@ Meteor.publish("Packages", function (shopId) {
     // we should always have a shop
     if (myShopId) {
       // if admin user, return all shop properties
-      if (Roles.userIsInRole(self.userId, [
+      if (Roles.userIsInRole(userId, [
         "dashboard", "owner", "admin"
-      ], Reaction.getShopId() || Roles.userIsInRole(self.userId, [
+      ], Reaction.getShopId() || Roles.userIsInRole(userId, [
         "owner", "admin"
       ], Roles.GLOBAL_GROUP))) {
         options = {};
@@ -105,10 +108,10 @@ Meteor.publish("Packages", function (shopId) {
         shopId: myShopId
       }, options).observe({
         added(doc) {
-          self.added("Packages", doc._id, transform(doc, self.userId));
+          self.added("Packages", doc._id, transform(doc, userId));
         },
         changed(newDoc, origDoc) {
-          self.changed("Packages", origDoc._id, transform(newDoc, self.userId));
+          self.changed("Packages", origDoc._id, transform(newDoc, userId));
         },
         removed(origDoc) {
           self.removed("Packages", origDoc._id);
@@ -121,4 +124,6 @@ Meteor.publish("Packages", function (shopId) {
     }
     return self.ready();
   }
+
+  return self.ready();
 });

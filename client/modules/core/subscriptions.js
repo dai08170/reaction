@@ -8,6 +8,7 @@ import { Tracker } from "meteor/tracker";
 import { SubsManager } from "meteor/meteorhacks:subs-manager";
 import { Accounts, Cart } from "/lib/collections";
 import Reaction from "./main";
+import { getUserId } from "./helpers/globals";
 
 export const Subscriptions = {};
 
@@ -90,7 +91,7 @@ Tracker.autorun(() => {
 });
 
 Tracker.autorun(() => {
-  Subscriptions.UserProfile = Meteor.subscribe("UserProfile", Meteor.userId());
+  Subscriptions.UserProfile = Meteor.subscribe("UserProfile", getUserId());
 });
 
 Tracker.autorun(() => {

@@ -9,6 +9,7 @@ import { Router } from "../lib";
 import { initBrowserRouter } from "./browserRouter";
 
 Meteor.startup(() => {
+  // Init Keycloak before router renders
   window.keycloak = new window.Keycloak({
     realm: Meteor.settings.public.keycloakRealm,
     clientId: Meteor.settings.public.keycloakClientID,
@@ -25,7 +26,13 @@ Meteor.startup(() => {
 
         keycloak.loadUserProfile().success((profile) => {
           localStorage.setItem("reaction_kc_profile", JSON.stringify(profile));
-          Session.set("rc_userId", profile.attributes["reaction-meteor-id"][0]);
+          const refAccountId = profile.attributes["reaction-account-id"][0];
+
+          // Setup for method calls
+          Meteor.call("authKeycloak", { refAccountId, token: keycloak.token });
+
+          // To trigger re-render
+          Session.set("rc_userId", refAccountId);
         }).error(() => {
           Logger.error("Failed to load profile");
         });

@@ -9,6 +9,21 @@ type FulfillmentData {
   shippingAddress: Address
 }
 
+"A fulfillment option for a cart fulfillment group, which is a method with an associated price"
+type FulfillmentOption {
+  "The fulfillment option ID"
+  _id: ID!
+
+  "The fulfillment method that was selected"
+  fulfillmentMethod: FulfillmentMethod
+
+  "The additional amount charged for handling"
+  handlingPrice: Money!
+
+  "The base price charged"
+  price: Money!
+}
+
 """
 Links one or more cart items to fulfillment data. The most common example is having one FulfillmentGroup
 per shipping address.
@@ -24,8 +39,11 @@ type FulfillmentGroup implements Node {
   "The items that are included in this fulfillment group"
   items: [CartItem]!
 
-  "The fulfillment type. Any valid type that has been registered by a fulfillment plugin."
-  type: String!
+  "The fulfillment method selected by a shopper for this group, with its associated price"
+  selectedFulfillmentOption: FulfillmentOption
+
+  "The fulfillment type. Any valid type that has been registered by a fulfillment plugin. Examples: \"shipping\", \"digital\""
+  type: FulfillmentType!
 }
 
 "Input needed when setting a shipping address"
@@ -55,7 +73,8 @@ type SetShippingAddressPayload {
 
 "An example"
 type ExamplePaymentMethodInputData {
-  example: String!
+  "The billing address entered by the shopper"
+  billingAddress: Address!
 }
 
 "An example"
@@ -67,31 +86,38 @@ union PaymentMethodInputData = ExamplePaymentMethodInputData | ExampleSavedCardP
 
 """
 Information about a payment method that has been chosen by a shopper,
-and how much of the order total should be applied to it
+and how much of the cart total should be applied to it
 """
-type SelectedPaymentMethodInfo {
+type CartPayment implements Node {
+  "The CartPayment ID"
+  _id: ID!
+
   """
   The amount that will be applied to this payment method. If there are multiple payment methods applied to the
-  order, this may be less than the order total.
+  cart, this may be less than the cart total.
   """
   amount: Money!
 
   """
-  The shopper-provided data needed to complete the payment using this method
+  The shopper-provided data needed to complete the payment using this method.
+  For example, a billing address, store credit code, stored credit card ID, etc.
   """
   data: PaymentMethodInputData
+
+  "Has this payment been authorized?"
+  isAuthorized: Boolean!
 
   "The payment method"
   method: PaymentMethod!
 }
 
-# "An example"
+"An example"
 input ExampleSavedCardPaymentMethodInputDataInput {
   cvc: String!
 }
 
 "Input when setting the example saved card payment method as the payment method for the cart"
-input SetExampleSavedCardPaymentMethodOnCartInput {
+input SetExampleSavedCardPaymentOnCartInput {
   "An optional string identifying the mutation call, which will be returned in the response payload"
   clientMutationId: String
 
@@ -104,13 +130,14 @@ input SetExampleSavedCardPaymentMethodOnCartInput {
   methodData: String!
 }
 
-# "An example"
+"An example"
 input ExamplePaymentMethodInputDataInput {
-  example: String!
+  "The billing address entered by the shopper"
+  billingAddress: Address!
 }
 
 "Input when setting the example payment method as the payment method for the cart"
-input SetExamplePaymentMethodOnCartInput {
+input SetExamplePaymentOnCartInput {
   "An optional string identifying the mutation call, which will be returned in the response payload"
   clientMutationId: String
 
@@ -138,16 +165,27 @@ type SetPaymentPayload {
 
 "A summary of the totals for this order"
 type OrderSummary {
-  "The total price of all chosen fulfillment methods"
-  fulfillmentTotal: Money!
+  "The total of all discounts applied, as a positive number"
+  discountTotal: Money!
+
+  """
+  The total price of all chosen fulfillment methods. This may be null, and there is a difference
+  between null and 0. Null means "not able to calculate", such as when no fulfillment methods have
+  been selected or no rate is available for them.
+  """
+  fulfillmentTotal: Money
 
   "The combined prices of all cart items"
   itemTotal: Money!
 
-  "The total estimated tax that has not already been included in the item prices"
-  taxTotal: Money!
+  """
+  The total estimated tax that has not already been included in the item prices. This may be null,
+  and there is a difference between null and 0. Null means "not able to calculate", such as when no
+  fulfillment methods have been selected or there is some other issue with the tax service.
+  """
+  taxTotal: Money
 
-  "The sum of `itemTotal`, `fulfillmentTotal`, and `taxTotal`"
+  "The sum of `itemTotal`, `fulfillmentTotal`, and `taxTotal`, minus `discountTotal`"
   total: Money!
 }
 
@@ -156,8 +194,8 @@ type Checkout {
   "One or more fulfillment groups, for example, mapping certain items to certain shipping addresses"
   fulfillmentGroups: [FulfillmentGroup]!
 
-  "One or more payment methods selected by the shopper during checkout"
-  selectedPaymentMethods: [SelectedPaymentMethodInfo]!
+  "One or more payments added by the shopper during checkout"
+  payments: [CartPayment]!
 
   "A summary of the totals for this order"
   summary: OrderSummary!
@@ -168,10 +206,10 @@ extend type Mutation {
   setShippingAddress(input: SetShippingAddressInput!): SetShippingAddressPayload!
 
   "Set the example payment method as the way the user has chosen to pay for a cart"
-  setExamplePaymentMethodOnCart(input: SetExamplePaymentMethodOnCartInput!): SetPaymentPayload!
+  setExamplePaymentOnCart(input: SetExamplePaymentOnCartInput!): SetPaymentPayload!
 
   "Set the example saved card payment method as the way the user has chosen to pay for a cart"
-  setExampleSavedCardPaymentMethodOnCart(input: SetExampleSavedCardPaymentMethodOnCartInput!): SetPaymentPayload!
+  setExampleSavedCardPaymentOnCart(input: SetExampleSavedCardPaymentOnCartInput!): SetPaymentPayload!
 
   # Maybe add later
   # addPayment(input: AddPaymentInput!): AddPaymentPayload!
